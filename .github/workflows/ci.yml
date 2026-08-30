@@ -1,0 +1,23 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Проверить конфигурацию
+        shell: pwsh
+        run: ./scripts/check.ps1
+      - name: Запустить k6 smoke
+        shell: pwsh
+        run: ./scripts/run-load.ps1
+  security:
+    uses: portable-agent/.github/.github/workflows/reusable-security.yml@main
+

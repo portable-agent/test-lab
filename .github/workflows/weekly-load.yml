@@ -1,0 +1,20 @@
+name: Weekly load
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 3 * * 1"
+permissions:
+  contents: read
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Запустить расширенный локальный тест
+        shell: pwsh
+        env:
+          K6_USERS: "20"
+          K6_TIME: 2m
+        run: ./scripts/run-load.ps1
+

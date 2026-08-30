@@ -1,0 +1,20 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: test-delay
+  namespace: change-me
+  labels:
+    portable-agent.io/manual-test: "true"
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces: [change-me]
+    labelSelectors:
+      portable-agent.io/chaos-ready: "true"
+  delay:
+    latency: 200ms
+    correlation: "50"
+    jitter: 50ms
+  duration: 30s
+

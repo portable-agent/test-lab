@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: test-lab
+  description: Системные и нагрузочные тесты Portable Agent
+  annotations:
+    github.com/project-slug: portable-agent/test-lab
+spec:
+  type: test
+  lifecycle: experimental
+  owner: platform
+

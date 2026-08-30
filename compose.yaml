@@ -1,0 +1,28 @@
+name: ${COMPOSE_PROJECT_NAME:-portable-agent-test-lab}
+services:
+  fake-service:
+    image: ${FAKE_IMAGE:?set FAKE_IMAGE}
+    ports:
+      - "127.0.0.1:${FAKE_PORT:-18080}:8080"
+    volumes:
+      - ./fake/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/health]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  k6:
+    image: ${K6_IMAGE:?set K6_IMAGE}
+    profiles: [test]
+    environment:
+      TARGET_URL: ${TARGET_URL:?set TARGET_URL}
+      K6_USERS: ${K6_USERS:-5}
+      K6_TIME: ${K6_TIME:-20s}
+      K6_P95_MS: ${K6_P95_MS:-300}
+      K6_ERROR_RATE: ${K6_ERROR_RATE:-0.01}
+    volumes:
+      - ./tests:/tests:ro
+    depends_on:
+      fake-service:
+        condition: service_healthy
+    command: [run, /tests/smoke.js]

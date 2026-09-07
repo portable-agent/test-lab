@@ -4,6 +4,7 @@ import { check, fail, sleep } from 'k6';
 const agentUrl = requiredUrl('AGENT_URL');
 const actionUrl = requiredUrl('ACTION_URL');
 const calendarTestUrl = requiredUrl('CALENDAR_TEST_URL');
+const calendarTestKey = required('CALENDAR_TEST_API_KEY');
 const actionToken = required('ACTION_TOKEN');
 const tenantId = required('TEST_TENANT_ID');
 const actorId = required('TEST_ACTOR_ID');
@@ -135,6 +136,7 @@ function waitForDone(actionId) {
 function findEvents(requestKey) {
   const response = http.get(
     `${calendarTestUrl}/test/events?requestKey=${encodeURIComponent(requestKey)}`,
+    { headers: { 'X-Test-Key': calendarTestKey } },
   );
   expectStatus(response, 200, 'fake-calendar test API is not available');
   return response.json().events;

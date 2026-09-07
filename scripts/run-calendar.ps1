@@ -13,6 +13,7 @@ foreach ($url in @($AgentUrl, $ActionUrl, $CalendarTestUrl)) {
     }
 }
 if (-not $env:ACTION_TOKEN) { throw "Укажи ACTION_TOKEN с JWT тестового пользователя." }
+if (-not $env:CALENDAR_TEST_API_KEY) { throw "Укажи CALENDAR_TEST_API_KEY локального Calendar MCP." }
 $parts = $env:ACTION_TOKEN.Split('.')
 if ($parts.Count -ne 3) { throw "ACTION_TOKEN не похож на JWT." }
 $payload = $parts[1].Replace('-', '+').Replace('_', '/')
@@ -32,6 +33,7 @@ if (-not $claims.sub -or -not $claims.tenant_id) {
     --env "AGENT_URL=$AgentUrl" `
     --env "ACTION_URL=$ActionUrl" `
     --env "CALENDAR_TEST_URL=$CalendarTestUrl" `
+    --env "CALENDAR_TEST_API_KEY=$env:CALENDAR_TEST_API_KEY" `
     --env "ACTION_TOKEN=$env:ACTION_TOKEN" `
     --env "TEST_TENANT_ID=$($claims.tenant_id)" `
     --env "TEST_ACTOR_ID=$($claims.sub)" `

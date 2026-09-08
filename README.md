@@ -26,8 +26,9 @@ pwsh ./scripts/run-load.ps1
 
 ```powershell
 $env:ACTION_TOKEN = "<local-test-token>"
+$env:CALENDAR_TEST_API_KEY = "<тот же локальный секрет, что у Calendar MCP>"
 pwsh ./scripts/run-calendar.ps1
 ```
 
 Скрипт принимает только локальные HTTP-адреса. Проверочный API `fake-calendar` доступен только в
-тестовом режиме.
+тестовом режиме и требует отдельный `X-Test-Key`; секрет не хранится в Git.

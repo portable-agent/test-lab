@@ -10,7 +10,7 @@ foreach ($required in @("TARGET_URL", "thresholds", "http_req_failed", "http_req
     if ($script -notmatch $required) { throw "В k6-тесте нет $required." }
 }
 $calendarScript = Get-Content tests/calendar-event.js -Raw
-foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed")) {
+foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key")) {
     if ($calendarScript -notmatch [regex]::Escape($required)) { throw "В calendar acceptance-тесте нет $required." }
 }
 Write-Host "Быстрые проверки test-lab прошли."

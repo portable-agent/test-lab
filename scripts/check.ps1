@@ -10,8 +10,11 @@ foreach ($required in @("TARGET_URL", "thresholds", "http_req_failed", "http_req
     if ($script -notmatch $required) { throw "В k6-тесте нет $required." }
 }
 $calendarScript = Get-Content tests/calendar-event.js -Raw
-foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key")) {
+foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key", "availableConnectors", "requiresApproval", "Authorization")) {
     if ($calendarScript -notmatch [regex]::Escape($required)) { throw "В calendar acceptance-тесте нет $required." }
+}
+foreach ($oldName in @("utterance", "tenant_id", "actor_id", "available_connectors", "requires_approval")) {
+    if ($calendarScript -match [regex]::Escape($oldName)) { throw "В calendar acceptance-тесте осталось старое поле $oldName." }
 }
 Write-Host "Быстрые проверки test-lab прошли."
 

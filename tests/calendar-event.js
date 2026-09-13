@@ -5,9 +5,7 @@ const agentUrl = requiredUrl('AGENT_URL');
 const actionUrl = requiredUrl('ACTION_URL');
 const calendarTestUrl = requiredUrl('CALENDAR_TEST_URL');
 const calendarTestKey = required('CALENDAR_TEST_API_KEY');
-const actionToken = required('ACTION_TOKEN');
-const tenantId = required('TEST_TENANT_ID');
-const actorId = required('TEST_ACTOR_ID');
+const userToken = required('ACTION_TOKEN');
 const eventData = {
   title: 'Обсуждение проекта',
   startAt: '2026-09-08T12:00:00+03:00',
@@ -52,8 +50,10 @@ export default function () {
   check(events, {
     'calendar has one event': (items) => items.length === 1,
     'calendar keeps the exact title': (items) => items[0]?.title === eventData.title,
-    'calendar keeps the exact start': (items) => items[0]?.startAt === eventData.startAt,
-    'calendar keeps the exact end': (items) => items[0]?.endAt === eventData.endAt,
+    'calendar keeps the start instant and offset': (items) =>
+      sameDate(items[0]?.startAt, eventData.startAt),
+    'calendar keeps the end instant and offset': (items) =>
+      sameDate(items[0]?.endAt, eventData.endAt),
     'calendar keeps the exact time zone': (items) => items[0]?.timeZone === eventData.timeZone,
     'calendar event id matches action result': (items) => items[0]?.eventId === done.result?.eventId,
   });
@@ -71,20 +71,21 @@ function createProposal() {
   const response = http.post(
     `${agentUrl}/api/v1/proposals`,
     JSON.stringify({
-      utterance: `Создай встречу "${eventData.title}" с ${eventData.startAt} до ${eventData.endAt}`,
+      text: `Создай встречу "${eventData.title}" с ${eventData.startAt} до ${eventData.endAt}`,
       context: {
-        tenant_id: tenantId,
-        actor_id: actorId,
-        timezone: eventData.timeZone,
-        available_connectors: ['fake-calendar'],
+        timeZone: eventData.timeZone,
+        availableConnectors: ['fake-calendar'],
       },
     }),
-    jsonHeaders(),
+    authHeaders(),
   );
   expectStatus(response, 200, 'agent-runtime did not create a proposal');
   const body = response.json();
   if (!body.proposal || body.clarification) {
     fail('agent-runtime returned no complete proposal');
+  }
+  if (!body.proposal.requiresApproval) {
+    fail('agent-runtime proposal does not require approval');
   }
   check(body.proposal.payload, {
     'proposal keeps the exact event data': (payload) =>
@@ -142,17 +143,25 @@ function findEvents(requestKey) {
   return response.json().events;
 }
 
-function jsonHeaders() {
-  return { headers: { 'Content-Type': 'application/json' } };
-}
-
 function authHeaders() {
   return {
     headers: {
-      Authorization: `Bearer ${actionToken}`,
+      Authorization: `Bearer ${userToken}`,
       'Content-Type': 'application/json',
     },
   };
+}
+
+function sameDate(actual, expected) {
+  if (!actual || Date.parse(actual) !== Date.parse(expected)) {
+    return false;
+  }
+  return timeOffset(actual) === timeOffset(expected);
+}
+
+function timeOffset(value) {
+  const match = value.match(/(Z|[+-]\d{2}:\d{2})$/);
+  return match ? match[1] : null;
 }
 
 function expectStatus(response, expected, message) {

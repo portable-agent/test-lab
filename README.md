@@ -25,10 +25,14 @@ pwsh ./scripts/run-load.ps1
 локального стенда получи JWT тестового пользователя и выполни:
 
 ```powershell
-$env:ACTION_TOKEN = "<local-test-token>"
+$env:ACTION_TOKEN = "<local-test-token с audience agent-runtime и action-service>"
 $env:CALENDAR_TEST_API_KEY = "<тот же локальный секрет, что у Calendar MCP>"
 pwsh ./scripts/run-calendar.ps1
 ```
 
 Скрипт принимает только локальные HTTP-адреса. Проверочный API `fake-calendar` доступен только в
 тестовом режиме и требует отдельный `X-Test-Key`; секрет не хранится в Git.
+
+Один JWT передаётся в Agent Runtime и Action Service. Оба сервиса независимо проверяют подпись,
+issuer, срок и свой audience. Идентификаторы пользователя и tenant не передаются в JSON запроса:
+сервисы получают их из проверенных claims `sub` и `tenant_id`.

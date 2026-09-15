@@ -42,7 +42,8 @@ task test:e2e
 Runner сам получает короткоживущий JWT у локального Keycloak. В CI вместо тестового логина и пароля
 можно передать готовый `ACTION_TOKEN`. Скрипт принимает только локальные HTTP-адреса. Проверочный API
 `fake-calendar` доступен только в тестовом режиме и требует отдельный `X-Test-Key`; секреты не
-хранятся в Git.
+хранятся в Git. Для одинакового запуска в Docker Desktop и Linux runner имя
+`host.docker.internal` явно связывается со стандартным Docker `host-gateway`.
 
 Путь начинается с публичной границы `Channel Gateway`, затем проходит через Agent Runtime, Action
 Service, Temporal и Calendar MCP. Один JWT передаётся по этому пути; каждый защищённый сервис

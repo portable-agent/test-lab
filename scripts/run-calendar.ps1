@@ -56,6 +56,7 @@ $calendarTestKey = Get-Setting "CALENDAR_TEST_API_KEY" -Secret
 $k6Image = Get-Setting "K6_IMAGE"
 
 & docker run --rm `
+    --add-host "host.docker.internal:host-gateway" `
     --volume "${PWD}/tests:/tests:ro" `
     --env "CHANNEL_URL=$ChannelUrl" `
     --env "ACTION_URL=$ActionUrl" `

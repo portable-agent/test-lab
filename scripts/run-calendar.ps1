@@ -2,7 +2,8 @@ param(
     [string]$ChannelUrl = "",
     [string]$ActionUrl = "",
     [string]$CalendarTestUrl = "",
-    [string]$KeycloakUrl = ""
+    [string]$KeycloakUrl = "",
+    [string]$DockerNetwork = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,11 +24,17 @@ function Get-Setting([string]$Name, [switch]$Secret) {
 
 function Assert-LocalUrl([string]$Url) {
     $uri = [Uri]$url
-    if ($uri.Scheme -ne "http" -or $uri.Host -notin @("localhost", "127.0.0.1", "host.docker.internal")) {
+    $allowedHosts = @("localhost", "127.0.0.1", "host.docker.internal")
+    if ($DockerNetwork) { $allowedHosts += @("channel-gateway", "action-service", "calendar-mcp") }
+    if ($uri.Scheme -ne "http" -or $uri.Host -notin $allowedHosts) {
         throw "Calendar acceptance test allows local HTTP URLs only."
     }
 }
 
+$DockerNetwork = if ($DockerNetwork) { $DockerNetwork } else { [Environment]::GetEnvironmentVariable("DOCKER_NETWORK") }
+if ($DockerNetwork -and $DockerNetwork -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]+$') {
+    throw "DOCKER_NETWORK contains unsupported characters."
+}
 $ChannelUrl = if ($ChannelUrl) { $ChannelUrl } else { Get-Setting "CHANNEL_URL" }
 $ActionUrl = if ($ActionUrl) { $ActionUrl } else { Get-Setting "ACTION_URL" }
 $CalendarTestUrl = if ($CalendarTestUrl) { $CalendarTestUrl } else { Get-Setting "CALENDAR_TEST_URL" }
@@ -54,15 +61,18 @@ $parts = $token.Split('.')
 if ($parts.Count -ne 3) { throw "ACTION_TOKEN is not a JWT." }
 $calendarTestKey = Get-Setting "CALENDAR_TEST_API_KEY" -Secret
 $k6Image = Get-Setting "K6_IMAGE"
+$dockerArgs = @("run", "--rm", "--add-host", "host.docker.internal:host-gateway")
+if ($DockerNetwork) { $dockerArgs += @("--network", $DockerNetwork) }
+$dockerArgs += @(
+    "--volume", "${PWD}/tests:/tests:ro",
+    "--env", "CHANNEL_URL=$ChannelUrl",
+    "--env", "ACTION_URL=$ActionUrl",
+    "--env", "CALENDAR_TEST_URL=$CalendarTestUrl",
+    "--env", "CALENDAR_TEST_API_KEY=$calendarTestKey",
+    "--env", "ACTION_TOKEN=$token",
+    $k6Image, "run", "/tests/calendar-event.js"
+)
 
-& docker run --rm `
-    --add-host "host.docker.internal:host-gateway" `
-    --volume "${PWD}/tests:/tests:ro" `
-    --env "CHANNEL_URL=$ChannelUrl" `
-    --env "ACTION_URL=$ActionUrl" `
-    --env "CALENDAR_TEST_URL=$CalendarTestUrl" `
-    --env "CALENDAR_TEST_API_KEY=$calendarTestKey" `
-    --env "ACTION_TOKEN=$token" `
-    $k6Image run /tests/calendar-event.js
+& docker @dockerArgs
 
 if ($LASTEXITCODE -ne 0) { throw "Calendar acceptance scenario failed." }

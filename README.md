@@ -44,6 +44,8 @@ Runner сам получает короткоживущий JWT у локаль�
 `fake-calendar` доступен только в тестовом режиме и требует отдельный `X-Test-Key`; секреты не
 хранятся в Git. Для одинакового запуска в Docker Desktop и Linux runner имя
 `host.docker.internal` явно связывается со стандартным Docker `host-gateway`.
+Если задан `DOCKER_NETWORK`, k6 подключается к существующей Compose-сети и принимает внутренние
+имена `channel-gateway`, `action-service` и `calendar-mcp`. Сам `test-lab` эту сеть не создаёт.
 
 Путь начинается с публичной границы `Channel Gateway`, затем проходит через Agent Runtime, Action
 Service, Temporal и Calendar MCP. Один JWT передаётся по этому пути; каждый защищённый сервис

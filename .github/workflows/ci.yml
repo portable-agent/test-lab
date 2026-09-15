@@ -12,12 +12,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: go-task/setup-task@v2
+        with:
+          version: 3.53.1
       - name: Проверить конфигурацию
-        shell: pwsh
-        run: ./scripts/check.ps1
+        run: task verify
       - name: Запустить k6 smoke
-        shell: pwsh
-        run: ./scripts/run-load.ps1
+        run: task test:smoke
   security:
     uses: portable-agent/.github/.github/workflows/reusable-security.yml@main
 

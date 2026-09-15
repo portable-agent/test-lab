@@ -1,0 +1,42 @@
+version: "3"
+
+silent: true
+
+vars:
+  POWERSHELL: '{{if eq OS "windows"}}powershell.exe{{else}}pwsh{{end}}'
+  POWERSHELL_ARGS: '{{if eq OS "windows"}}-NoProfile -ExecutionPolicy Bypass{{else}}-NoProfile{{end}}'
+
+tasks:
+  default:
+    desc: Показать доступные команды
+    cmds:
+      - task --list
+
+  doctor:
+    desc: Проверить Docker и Task
+    cmds:
+      - task --version
+      - docker version --format "Docker Engine {{`{{.Server.Version}}`}}"
+      - docker compose version
+
+  verify:
+    desc: Проверить структуру и конфигурацию лаборатории
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/check.ps1'
+
+  test:smoke:
+    desc: Выполнить быстрый тест локального fake-service
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-load.ps1'
+
+  test:e2e:
+    desc: Проверить создание встречи через полный локальный срез
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-calendar.ps1'
+
+  test:load:
+    desc: Выполнить настраиваемый нагрузочный тест
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-load.ps1 -TargetUrl "{{.TARGET_URL}}"'
+    requires:
+      vars: [TARGET_URL]

@@ -8,9 +8,12 @@
 
 ```powershell
 Copy-Item .env.example .env
-pwsh ./scripts/check.ps1
-pwsh ./scripts/run-load.ps1
+task verify
+task test:smoke
 ```
+
+Все повседневные команды собраны в `Taskfile.yml`. Выполни `task --list`, чтобы увидеть их. На
+Windows Task сам использует Windows PowerShell, поэтому отдельная установка `pwsh` не нужна.
 
 По умолчанию Compose поднимает только локальный fake-service. Для внешней среды явно передай
 `TARGET_URL`; production URL скрипты отклоняют. Пороги k6 хранятся рядом со сценарием.
@@ -21,18 +24,35 @@ pwsh ./scripts/run-load.ps1
 действие ждёт подтверждения, после подтверждения завершается и создаёт ровно одно событие. Повтор с
 тем же `requestKey` не создаёт дубль.
 
-До появления Temporal worker и `fake-calendar` этот тест намеренно красный. После запуска полного
-локального стенда получи JWT тестового пользователя и выполни:
+Сначала подними полный локальный стенд в репозитории `deploy`. Затем заполни в локальном `.env`
+учётные данные только тестового пользователя и ключ проверочного API:
 
-```powershell
-$env:ACTION_TOKEN = "<local-test-token с audience agent-runtime и action-service>"
-$env:CALENDAR_TEST_API_KEY = "<тот же локальный секрет, что у Calendar MCP>"
-pwsh ./scripts/run-calendar.ps1
+```dotenv
+TEST_USERNAME=local-user
+TEST_PASSWORD=<пароль локального пользователя>
+CALENDAR_TEST_API_KEY=<локальный ключ Calendar MCP>
 ```
 
-Скрипт принимает только локальные HTTP-адреса. Проверочный API `fake-calendar` доступен только в
-тестовом режиме и требует отдельный `X-Test-Key`; секрет не хранится в Git.
+После этого запусти:
 
-Один JWT передаётся в Agent Runtime и Action Service. Оба сервиса независимо проверяют подпись,
-issuer, срок и свой audience. Идентификаторы пользователя и tenant не передаются в JSON запроса:
-сервисы получают их из проверенных claims `sub` и `tenant_id`.
+```powershell
+task test:e2e
+```
+
+Runner сам получает короткоживущий JWT у локального Keycloak. В CI вместо тестового логина и пароля
+можно передать готовый `ACTION_TOKEN`. Скрипт принимает только локальные HTTP-адреса. Проверочный API
+`fake-calendar` доступен только в тестовом режиме и требует отдельный `X-Test-Key`; секреты не
+хранятся в Git.
+
+Путь начинается с публичной границы `Channel Gateway`, затем проходит через Agent Runtime, Action
+Service, Temporal и Calendar MCP. Один JWT передаётся по этому пути; каждый защищённый сервис
+самостоятельно проверяет подпись, issuer, срок и свой audience. Идентификаторы пользователя и tenant
+не передаются в JSON запроса: сервисы получают их из проверенных claims `sub` и `tenant_id`.
+
+## Границы тестов
+
+- unit-, component- и integration-тесты принадлежат репозиторию конкретного сервиса;
+- здесь остаются только критические black-box пути пользователя, нагрузочные проверки и безопасные
+  resilience-сценарии;
+- `test:e2e` не поднимает сервисы и не управляет их жизненным циклом: за окружение отвечает `deploy`;
+- production-адреса runner отклоняет до запуска теста.

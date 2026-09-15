@@ -6,5 +6,7 @@
 | Бизнес-код | отсутствует |
 | Основной инструмент | k6; contract-first сценарии |
 | Chaos | отдельный ручной запуск, выключен по умолчанию |
-| Первый acceptance-путь | Agent Runtime 2.1 → Action Service → Temporal → Calendar MCP |
+| Первый acceptance-путь | Channel Gateway → Agent Runtime → Action Service → Temporal → Calendar MCP |
+| Локальный запуск | `task test:e2e` против уже поднятого окружения |
+| Граница ответственности | Не поднимает сервисы и не содержит их component-тесты |
 

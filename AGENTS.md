@@ -17,6 +17,10 @@
 ## Команды
 
 ```powershell
-pwsh ./scripts/check.ps1
-pwsh ./scripts/run-load.ps1
+task verify
+task test:smoke
+task test:e2e
 ```
+
+`test:e2e` запускается против уже поднятого `deploy`-окружения. Не переноси сюда управление жизненным
+циклом сервисов: `test-lab` владеет сценариями и результатами, `deploy` владеет стендом.

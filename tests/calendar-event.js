@@ -1,15 +1,15 @@
 import http from 'k6/http';
 import { check, fail, sleep } from 'k6';
 
-const agentUrl = requiredUrl('AGENT_URL');
+const channelUrl = requiredUrl('CHANNEL_URL');
 const actionUrl = requiredUrl('ACTION_URL');
 const calendarTestUrl = requiredUrl('CALENDAR_TEST_URL');
 const calendarTestKey = required('CALENDAR_TEST_API_KEY');
 const userToken = required('ACTION_TOKEN');
 const eventData = {
   title: 'Обсуждение проекта',
-  startAt: '2026-09-08T12:00:00+03:00',
-  endAt: '2026-09-08T12:30:00+03:00',
+  startAt: '2030-09-08T12:00:00+03:00',
+  endAt: '2030-09-08T12:30:00+03:00',
   timeZone: 'Europe/Moscow',
 };
 
@@ -69,23 +69,24 @@ export default function () {
 
 function createProposal() {
   const response = http.post(
-    `${agentUrl}/api/v1/proposals`,
+    `${channelUrl}/api/v1/messages`,
     JSON.stringify({
+      requestKey: `proposal-${Date.now()}-${__VU}-${__ITER}`,
       text: `Создай встречу "${eventData.title}" с ${eventData.startAt} до ${eventData.endAt}`,
       context: {
+        locale: 'ru-RU',
         timeZone: eventData.timeZone,
-        availableConnectors: ['fake-calendar'],
       },
     }),
     authHeaders(),
   );
-  expectStatus(response, 200, 'agent-runtime did not create a proposal');
+  expectStatus(response, 200, 'channel-gateway did not create a proposal');
   const body = response.json();
   if (!body.proposal || body.clarification) {
-    fail('agent-runtime returned no complete proposal');
+    fail('channel-gateway returned no complete proposal');
   }
   if (!body.proposal.requiresApproval) {
-    fail('agent-runtime proposal does not require approval');
+    fail('channel-gateway proposal does not require approval');
   }
   check(body.proposal.payload, {
     'proposal keeps the exact event data': (payload) =>

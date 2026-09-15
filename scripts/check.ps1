@@ -19,7 +19,7 @@ foreach ($oldName in @("utterance", "tenant_id", "actor_id", "available_connecto
 if ($calendarScript -match "/api/v1/proposals") { throw "Acceptance-test must start through Channel Gateway." }
 
 $runner = Get-Content scripts/run-calendar.ps1 -Raw
-foreach ($required in @("ACTION_TOKEN", "KEYCLOAK_URL", "OIDC_REALM", "OIDC_CLIENT_ID", "TEST_USERNAME", "TEST_PASSWORD", "protocol/openid-connect/token", "--add-host", "host.docker.internal:host-gateway")) {
+foreach ($required in @("ACTION_TOKEN", "KEYCLOAK_URL", "OIDC_REALM", "OIDC_CLIENT_ID", "TEST_USERNAME", "TEST_PASSWORD", "protocol/openid-connect/token", "--add-host", "host.docker.internal:host-gateway", "DOCKER_NETWORK", "--network")) {
     if ($runner -notmatch [regex]::Escape($required)) { throw "Calendar runner does not support $required." }
 }
 

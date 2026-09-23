@@ -13,6 +13,9 @@ $calendarScript = Get-Content tests/calendar-event.js -Raw
 foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key", "CHANNEL_URL", "/api/v1/conversations/messages", "action_confirmation", "Authorization")) {
     if ($calendarScript -notmatch [regex]::Escape($required)) { throw "Calendar acceptance test does not contain $required." }
 }
+if ($calendarScript -notmatch [regex]::Escape('${channelUrl}/api/v1/actions/${card.actionId}/decisions')) {
+    throw "Widget decision must pass through Channel Gateway."
+}
 foreach ($oldName in @("utterance", "tenant_id", "actor_id", "available_connectors", "requires_approval")) {
     if ($calendarScript -match [regex]::Escape($oldName)) { throw "Calendar acceptance test still contains old field $oldName." }
 }

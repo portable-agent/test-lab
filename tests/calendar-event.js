@@ -112,7 +112,7 @@ function getAction(actionId) {
 
 function confirmAction(card) {
   const response = http.post(
-    `${actionUrl}/api/v1/actions/${card.actionId}/decisions`,
+    `${channelUrl}/api/v1/actions/${card.actionId}/decisions`,
     JSON.stringify({ decision: 'CONFIRM', payloadHash: card.payloadHash }),
     authHeaders(),
   );

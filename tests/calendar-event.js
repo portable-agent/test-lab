@@ -29,17 +29,22 @@ export const options = {
 
 export default function () {
   const requestKey = `calendar-test-${Date.now()}-${__VU}-${__ITER}`;
-  const proposal = createProposal();
-  const action = createAction(proposal, requestKey);
+  const card = createConversation(requestKey);
+  const action = getAction(card.actionId);
 
   check(action, {
     'action waits for approval': (item) => item.status === 'AWAITING_APPROVAL',
+    'action keeps the exact event data': (item) =>
+      item.payload.title === eventData.title &&
+      item.payload.startAt === eventData.startAt &&
+      item.payload.endAt === eventData.endAt &&
+      item.payload.timeZone === eventData.timeZone,
   });
   check(findEvents(requestKey), {
     'calendar is empty before approval': (items) => items.length === 0,
   });
 
-  confirmAction(action);
+  confirmAction(card);
   const done = waitForDone(action.id);
   const events = findEvents(requestKey);
 
@@ -58,20 +63,20 @@ export default function () {
     'calendar event id matches action result': (items) => items[0]?.eventId === done.result?.eventId,
   });
 
-  const repeated = createAction(proposal, requestKey);
+  const repeated = createConversation(requestKey);
   check(repeated, {
-    'repeated request returns the same action': (item) => item.id === action.id,
+    'repeated message returns the same action': (item) => item.actionId === action.id,
   });
   check(findEvents(requestKey), {
     'repeated request does not create a second event': (items) => items.length === 1,
   });
 }
 
-function createProposal() {
+function createConversation(requestKey) {
   const response = http.post(
-    `${channelUrl}/api/v1/messages`,
+    `${channelUrl}/api/v1/conversations/messages`,
     JSON.stringify({
-      requestKey: `proposal-${Date.now()}-${__VU}-${__ITER}`,
+      requestKey,
       text: `Создай встречу "${eventData.title}" с ${eventData.startAt} до ${eventData.endAt}`,
       context: {
         locale: 'ru-RU',
@@ -80,43 +85,35 @@ function createProposal() {
     }),
     authHeaders(),
   );
-  expectStatus(response, 200, 'channel-gateway did not create a proposal');
+  expectStatus(response, 200, 'conversation route did not return a confirmation');
   const body = response.json();
-  if (!body.proposal || body.clarification) {
-    fail('channel-gateway returned no complete proposal');
+  if (body.reply?.type !== 'confirmation') {
+    fail('conversation route returned no confirmation reply');
   }
-  if (!body.proposal.requiresApproval) {
-    fail('channel-gateway proposal does not require approval');
+  const card = body.reply.card;
+  if (card?.widget !== 'action_confirmation') {
+    fail('conversation route returned an unsupported widget');
   }
-  check(body.proposal.payload, {
-    'proposal keeps the exact event data': (payload) =>
-      payload.title === eventData.title &&
-      payload.startAt === eventData.startAt &&
-      payload.endAt === eventData.endAt &&
-      payload.timeZone === eventData.timeZone,
+  check(card, {
+    'confirmation points to an action': (item) => Boolean(item.actionId),
+    'confirmation protects the payload': (item) => /^[a-f0-9]{64}$/.test(item.payloadHash),
+    'confirmation offers confirm and cancel': (item) =>
+      item.actions?.some((action) => action.id === 'confirm') &&
+      item.actions?.some((action) => action.id === 'cancel'),
   });
-  return body.proposal;
+  return card;
 }
 
-function createAction(proposal, requestKey) {
-  const response = http.post(
-    `${actionUrl}/api/v1/actions`,
-    JSON.stringify({
-      kind: proposal.kind,
-      connector: proposal.connector,
-      payload: proposal.payload,
-      requestKey,
-    }),
-    authHeaders(),
-  );
-  expectStatus(response, 201, 'action-service did not create an action');
+function getAction(actionId) {
+  const response = http.get(`${actionUrl}/api/v1/actions/${actionId}`, authHeaders());
+  expectStatus(response, 200, 'action-service did not return the action');
   return response.json();
 }
 
-function confirmAction(action) {
+function confirmAction(card) {
   const response = http.post(
-    `${actionUrl}/api/v1/actions/${action.id}/decisions`,
-    JSON.stringify({ decision: 'CONFIRM', payloadHash: action.payloadHash }),
+    `${actionUrl}/api/v1/actions/${card.actionId}/decisions`,
+    JSON.stringify({ decision: 'CONFIRM', payloadHash: card.payloadHash }),
     authHeaders(),
   );
   expectStatus(response, 202, 'action-service did not accept confirmation');
@@ -124,9 +121,7 @@ function confirmAction(action) {
 
 function waitForDone(actionId) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const response = http.get(`${actionUrl}/api/v1/actions/${actionId}`, authHeaders());
-    expectStatus(response, 200, 'action-service did not return the action');
-    const action = response.json();
+    const action = getAction(actionId);
     if (action.status === 'SUCCEEDED' || action.status === 'FAILED') {
       return action;
     }

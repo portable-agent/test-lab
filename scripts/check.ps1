@@ -10,13 +10,14 @@ foreach ($required in @("TARGET_URL", "thresholds", "http_req_failed", "http_req
     if ($script -notmatch $required) { throw "k6 test does not contain $required." }
 }
 $calendarScript = Get-Content tests/calendar-event.js -Raw
-foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key", "CHANNEL_URL", "/api/v1/messages", "requiresApproval", "Authorization")) {
+foreach ($required in @("AWAITING_APPROVAL", "SUCCEEDED", "payloadHash", "requestKey", "result?.eventId", "http_req_failed", "CALENDAR_TEST_API_KEY", "X-Test-Key", "CHANNEL_URL", "/api/v1/conversations/messages", "action_confirmation", "Authorization")) {
     if ($calendarScript -notmatch [regex]::Escape($required)) { throw "Calendar acceptance test does not contain $required." }
 }
 foreach ($oldName in @("utterance", "tenant_id", "actor_id", "available_connectors", "requires_approval")) {
     if ($calendarScript -match [regex]::Escape($oldName)) { throw "Calendar acceptance test still contains old field $oldName." }
 }
 if ($calendarScript -match "/api/v1/proposals") { throw "Acceptance-test must start through Channel Gateway." }
+if ($calendarScript -match 'function createAction') { throw "Conversation Service must create the action." }
 
 $runner = Get-Content scripts/run-calendar.ps1 -Raw
 foreach ($required in @("ACTION_TOKEN", "KEYCLOAK_URL", "OIDC_REALM", "OIDC_CLIENT_ID", "TEST_USERNAME", "TEST_PASSWORD", "protocol/openid-connect/token", "--add-host", "host.docker.internal:host-gateway", "DOCKER_NETWORK", "--network")) {

@@ -34,6 +34,11 @@ tasks:
     cmds:
       - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-calendar.ps1'
 
+  test:model:
+    desc: Проверить понимание естественной фразы локальной AI-моделью
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-natural-calendar.ps1'
+
   test:load:
     desc: Выполнить настраиваемый нагрузочный тест
     cmds:

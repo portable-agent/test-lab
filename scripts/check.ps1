@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-foreach ($file in @(".env.example", "compose.yaml", "Taskfile.yml", "tests/smoke.js", "tests/calendar-event.js", "scripts/run-calendar.ps1", "chaos/pod-delay.yaml", "README.md", "AGENTS.md", "SERVICE.md")) {
+foreach ($file in @(".env.example", "compose.yaml", "Taskfile.yml", "tests/smoke.js", "tests/calendar-event.js", "tests/natural-calendar.js", "scripts/run-calendar.ps1", "scripts/run-natural-calendar.ps1", "chaos/pod-delay.yaml", "README.md", "AGENTS.md", "SERVICE.md")) {
     if (-not (Test-Path $file)) { throw "Required file is missing: $file" }
 }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Docker is not installed." }
@@ -27,8 +27,18 @@ foreach ($required in @("ACTION_TOKEN", "KEYCLOAK_URL", "OIDC_REALM", "OIDC_CLIE
     if ($runner -notmatch [regex]::Escape($required)) { throw "Calendar runner does not support $required." }
 }
 
+$naturalScript = Get-Content tests/natural-calendar.js -Raw
+foreach ($required in @("завтра в 19:00", "на полчаса", "Europe/Moscow", "CANCEL", "CANCELLED", "ACTION_TOKEN")) {
+    if ($naturalScript -notmatch [regex]::Escape($required)) { throw "Natural-language test does not contain $required." }
+}
+
+$naturalRunner = Get-Content scripts/run-natural-calendar.ps1 -Raw
+foreach ($required in @("MODEL_TEST_MAX_SECONDS", "natural-calendar.js", "run-calendar.ps1")) {
+    if ($naturalRunner -notmatch [regex]::Escape($required)) { throw "Natural-language runner does not support $required." }
+}
+
 $taskfile = Get-Content Taskfile.yml -Raw
-foreach ($required in @("verify:", "test:smoke:", "test:e2e:", "test:load:")) {
+foreach ($required in @("verify:", "test:smoke:", "test:e2e:", "test:model:", "test:load:")) {
     if ($taskfile -notmatch [regex]::Escape($required)) { throw "Taskfile does not contain $required." }
 }
 

@@ -3,7 +3,9 @@ param(
     [string]$ActionUrl = "",
     [string]$CalendarTestUrl = "",
     [string]$KeycloakUrl = "",
-    [string]$DockerNetwork = ""
+    [string]$DockerNetwork = "",
+    [ValidateSet("calendar-event.js", "natural-calendar.js")]
+    [string]$TestFile = "calendar-event.js"
 )
 
 $ErrorActionPreference = "Stop"
@@ -70,7 +72,7 @@ $dockerArgs += @(
     "--env", "CALENDAR_TEST_URL=$CalendarTestUrl",
     "--env", "CALENDAR_TEST_API_KEY=$calendarTestKey",
     "--env", "ACTION_TOKEN=$token",
-    $k6Image, "run", "/tests/calendar-event.js"
+    $k6Image, "run", "/tests/$TestFile"
 )
 
 & docker @dockerArgs

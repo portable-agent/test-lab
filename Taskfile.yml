@@ -39,6 +39,11 @@ tasks:
     cmds:
       - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-natural-calendar.ps1'
 
+  test:connection:
+    desc: Проверить предложение подключения Google Calendar
+    cmds:
+      - '{{.POWERSHELL}} {{.POWERSHELL_ARGS}} -File ./scripts/run-connection.ps1'
+
   test:load:
     desc: Выполнить настраиваемый нагрузочный тест
     cmds:

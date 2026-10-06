@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-foreach ($file in @(".env.example", "compose.yaml", "Taskfile.yml", "tests/smoke.js", "tests/calendar-event.js", "tests/natural-calendar.js", "scripts/run-calendar.ps1", "scripts/run-natural-calendar.ps1", "chaos/pod-delay.yaml", "README.md", "AGENTS.md", "SERVICE.md")) {
+foreach ($file in @(".env.example", "compose.yaml", "Taskfile.yml", "tests/smoke.js", "tests/calendar-event.js", "tests/natural-calendar.js", "tests/connection-widget.js", "scripts/run-calendar.ps1", "scripts/run-natural-calendar.ps1", "scripts/run-connection.ps1", "chaos/pod-delay.yaml", "README.md", "AGENTS.md", "SERVICE.md")) {
     if (-not (Test-Path $file)) { throw "Required file is missing: $file" }
 }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Docker is not installed." }
@@ -41,6 +41,21 @@ $taskfile = Get-Content Taskfile.yml -Raw
 foreach ($required in @("verify:", "test:smoke:", "test:e2e:", "test:model:", "test:load:")) {
     if ($taskfile -notmatch [regex]::Escape($required)) { throw "Taskfile does not contain $required." }
 }
+
+$connectionScript = Get-Content tests/connection-widget.js -Raw
+foreach ($required in @("connection", "google-calendar", "schemaVersion", "button", "https://accounts.google.com/", "state", "code_challenge", "fresh authorization URL", "/api/v1/conversations/messages")) {
+    if ($connectionScript -notmatch [regex]::Escape($required)) { throw "Connection acceptance test does not contain $required." }
+}
+if ($connectionScript -match "GOOGLE_OAUTH_CLIENT_SECRET") {
+    throw "Connection acceptance test must not receive the OAuth client secret."
+}
+
+$connectionRunner = Get-Content scripts/run-connection.ps1 -Raw
+foreach ($required in @("connection-widget.js", "ACTION_TOKEN", "DOCKER_NETWORK", "CHANNEL_URL")) {
+    if ($connectionRunner -notmatch [regex]::Escape($required)) { throw "Connection runner does not contain $required." }
+}
+
+if ($taskfile -notmatch '(?m)^  test:connection:') { throw "Taskfile does not contain test:connection." }
 
 $ci = Get-Content .github/workflows/ci.yml -Raw
 foreach ($required in @("go-task/setup-task", "task verify", "task test:smoke")) {

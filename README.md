@@ -55,6 +55,23 @@ task test:model
 pipeline нестабильным. Максимальное время ответа по умолчанию — 120 секунд; локально его можно
 изменить параметром `-MaxSeconds` у `scripts/run-natural-calendar.ps1`.
 
+## Acceptance-тест подключения календаря
+
+`tests/connection-widget.js` проверяет путь до внешней интеграции без настоящего Google-аккаунта.
+Conversation Service должен определить, что Google Calendar ещё не подключён, а Channel Gateway —
+вернуть публичный виджет `connection` со свежей ссылкой авторизации. Сценарий проверяет HTTPS-адрес
+Google, параметры `state`, PKCE `code_challenge`, отсутствие `client_secret` и новую ссылку при
+повторном запросе с тем же `requestKey`.
+
+Окружением владеет `deploy`. Из него выполни:
+
+```powershell
+task test:connection
+```
+
+Команда включает только тестовую конфигурацию Google OAuth. Она не вызывает Google и не передаёт
+OAuth client secret в контейнер k6. Поэтому сценарий воспроизводим в локальной разработке и CI.
+
 Runner сам получает короткоживущий JWT у локального Keycloak. В CI вместо тестового логина и пароля
 можно передать готовый `ACTION_TOKEN`. Скрипт принимает только локальные HTTP-адреса. Проверочный API
 `fake-calendar` доступен только в тестовом режиме и требует отдельный `X-Test-Key`; секреты не

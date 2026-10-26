@@ -31,6 +31,7 @@ export default function () {
   const requestKey = `calendar-test-${Date.now()}-${__VU}-${__ITER}`;
   const card = createConversation(requestKey);
   const action = getAction(card.actionId);
+  const waitingStatus = getStatus(card.actionId);
 
   check(action, {
     'action waits for approval': (item) => item.status === 'AWAITING_APPROVAL',
@@ -40,17 +41,34 @@ export default function () {
       item.payload.endAt === eventData.endAt &&
       item.payload.timeZone === eventData.timeZone,
   });
+  check(waitingStatus, {
+    'channel shows waiting action without payload': (item) =>
+      item.actionId === action.id &&
+      item.status === 'AWAITING_APPROVAL' &&
+      item.title === eventData.title &&
+      !('payload' in item) &&
+      !('payloadHash' in item),
+  });
   check(findEvents(requestKey), {
     'calendar is empty before approval': (items) => items.length === 0,
   });
 
   confirmAction(card);
   const done = waitForDone(action.id);
+  const doneStatus = getStatus(action.id);
   const events = findEvents(requestKey);
 
   check(done, {
     'action succeeds after approval': (item) => item.status === 'SUCCEEDED',
     'action returns event id': (item) => Boolean(item.result?.eventId),
+  });
+  check(doneStatus, {
+    'channel shows completed action without payload': (item) =>
+      item.actionId === done.id &&
+      item.status === 'SUCCEEDED' &&
+      item.title === eventData.title &&
+      !('payload' in item) &&
+      !('payloadHash' in item),
   });
   check(events, {
     'calendar has one event': (items) => items.length === 1,
@@ -107,6 +125,12 @@ function createConversation(requestKey) {
 function getAction(actionId) {
   const response = http.get(`${actionUrl}/api/v1/actions/${actionId}`, authHeaders());
   expectStatus(response, 200, 'action-service did not return the action');
+  return response.json();
+}
+
+function getStatus(actionId) {
+  const response = http.get(`${channelUrl}/api/v1/actions/${actionId}/status`, authHeaders());
+  expectStatus(response, 200, 'channel-gateway did not return the action status');
   return response.json();
 }
 
